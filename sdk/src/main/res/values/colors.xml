@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#6494DA</color>
+    <color name="colorPrimaryDark">#393861</color>
+    <color name="colorAccent">#6494DA</color>
+    <color name="kvell_dark">#1f1f2e</color>
+    <color name="kvell_grey">#62626c</color>
+    <color name="kvell_light_blue_grey">#c0c9d4</color>
+    <color name="kvell_dark_sky_blue">#4297df</color>
+    <color name="kvell_pale_red">#ec4444</color>
+    <color name="kvell_white">#ffffff</color>
+    <color name="kvell_black">#000000</color>
+    <color name="kvell_blue">#2e71fc</color>
+    <color name="kvell_transparent">#64000000</color>
+    <color name="kvell_edit_text_hint">#8C949F</color>
+</resources>
