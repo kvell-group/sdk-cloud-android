@@ -203,7 +203,7 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 	}
 
 	override fun onAuthorizationCompleted(md: String, paRes: String) {
-		viewModel.postThreeDs(md, paRes)
+		viewModel.finishThreeDs(md)
 	}
 
 	override fun onAuthorizationFailed(error: String?) {

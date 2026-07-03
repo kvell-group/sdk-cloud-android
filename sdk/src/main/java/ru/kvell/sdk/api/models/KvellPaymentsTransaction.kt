@@ -8,4 +8,5 @@ data class KvellPaymentsTransaction(
 	@SerializedName("CardHolderMessage") val cardHolderMessage: String?,
 	@SerializedName("PaReq") val paReq: String?,
 	@SerializedName("AcsUrl") val acsUrl: String?,
-	@SerializedName("ThreeDsCallbackId") val threeDsCallbackId: String?)
+	@SerializedName("ThreeDsCallbackId") val threeDsCallbackId: String?,
+	@SerializedName("Status") val status: String? = null)

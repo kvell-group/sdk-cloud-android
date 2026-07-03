@@ -2,11 +2,14 @@ package ru.kvell.sdk.ui.dialogs
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.core.view.isGone
@@ -28,6 +31,8 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 	companion object {
 		private const val POST_BACK_URL = "https://api.pay-pulse.example/payments/get3dsData"
+		// Return URL бесшовки (совпадает с PaymentUrl в charge) — сигнал завершения 3DS
+		private const val RETURN_URL_PREFIX = "https://sdk.pay-pulse.com/return"
 		private const val ARG_ACS_URL = "acs_url"
 		private const val ARG_MD = "md"
 		private const val ARG_PA_REQ = "pa_req"
@@ -108,12 +113,52 @@ class ThreeDsDialogFragment : DialogFragment() {
 	}
 
 	private inner class ThreeDsWebViewClient : WebViewClient() {
+		override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+			return handleReturnUrl(request.url.toString())
+		}
+
+		@Deprecated("Deprecated in Java")
+		override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+			return handleReturnUrl(url)
+		}
+
+		// POST-сабмит формы не вызывает shouldOverrideUrlLoading — ловим return URL в onPageStarted
+		override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+			if (url.startsWith(RETURN_URL_PREFIX)) {
+				view.stopLoading()
+				handleReturnUrl(url)
+			} else {
+				super.onPageStarted(view, url, favicon)
+			}
+		}
+
 		override fun onPageFinished(view: WebView, url: String) {
 			if (url.toLowerCase(Locale.getDefault()) == POST_BACK_URL.toLowerCase(Locale.getDefault())) {
 				view.isGone = true
 				view.loadUrl("javascript:window.JavaScriptThreeDs.processHTML('<head>'+document.getElementsByTagName('html')[0].innerHTML+'</head>');")
 			}
 		}
+	}
+
+	private var returnHandled = false
+
+	// Перехватываем return URL бесшовки и завершаем 3DS
+	private fun handleReturnUrl(url: String): Boolean {
+		if (!url.startsWith(RETURN_URL_PREFIX)) {
+			return false
+		}
+		if (returnHandled) {
+			return true
+		}
+		returnHandled = true
+		val uri = Uri.parse(url)
+		val resultMd = uri.getQueryParameter("MD") ?: md
+		val paRes = uri.getQueryParameter("PaRes") ?: ""
+		activity?.runOnUiThread {
+			listener?.onAuthorizationCompleted(resultMd, paRes)
+			dismissAllowingStateLoss()
+		}
+		return true
 	}
 
 	internal inner class ThreeDsJavaScriptInterface {

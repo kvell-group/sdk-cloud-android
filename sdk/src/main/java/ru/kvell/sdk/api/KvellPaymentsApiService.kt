@@ -10,6 +10,7 @@ import ru.kvell.sdk.api.models.KvellPaymentsBinInfoResponse
 import ru.kvell.sdk.api.models.KvellPaymentsGetTinkoffPayQrLinkResponse
 import ru.kvell.sdk.api.models.KvellPaymentsMerchantConfigurationResponse
 import ru.kvell.sdk.api.models.KvellPaymentsPublicKeyResponse
+import ru.kvell.sdk.api.models.PaymentGetBody
 import ru.kvell.sdk.api.models.PaymentRequestBody
 import ru.kvell.sdk.api.models.ThreeDsRequestBody
 import ru.kvell.sdk.api.models.KvellPaymentsTransactionResponse
@@ -26,6 +27,9 @@ interface KvellPaymentsApiService {
 
 	@POST("payments/cards/post3ds")
 	fun postThreeDs(@Body body: ThreeDsRequestBody): Single<KvellPaymentsTransactionResponse>
+
+	@POST("payments/get")
+	fun getPayment(@Body body: PaymentGetBody): Single<KvellPaymentsTransactionResponse>
 
 	@GET("bins/info/{firstSixDigits}")
 	fun getBinInfo(@Path("firstSixDigits") firstSixDigits: String): Single<KvellPaymentsBinInfoResponse>

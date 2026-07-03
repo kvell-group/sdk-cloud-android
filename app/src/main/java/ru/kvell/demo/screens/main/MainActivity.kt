@@ -53,7 +53,9 @@ class MainActivity : BaseActivity() {
 		val publicId = binding.editPublicId.text.toString()
 		val amount = binding.editAmount.text.toString()
 		val currency = binding.editCurrency.text.toString()
-		val invoiceId = binding.editInvoiceId.text.toString()
+		val invoiceId = binding.editInvoiceId.text.toString().let {
+			if (it.isNotEmpty()) "$it-${System.currentTimeMillis()}" else it
+		}
 		val description = binding.editDescription.text.toString()
 		val accountId = binding.editAccountId.text.toString()
 		val email = binding.editEmail.text.toString()

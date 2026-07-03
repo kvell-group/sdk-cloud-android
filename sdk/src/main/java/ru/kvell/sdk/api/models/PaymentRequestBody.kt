@@ -8,7 +8,7 @@ data class PaymentRequestBody(
 	@SerializedName("IpAddress") val ipAddress: String, // IP адрес плательщика (Обязательный)
 	@SerializedName("Name") val name: String? = null, // Имя держателя карты в латинице (если не задано — бэк подставит holder сам)
 	@SerializedName("CardCryptogramPacket") val cryptogram: String, // Криптограмма платежных данных (Обязательный)
-	@SerializedName("PaymentUrl") val paymentUrl: String = "kvell://sdk.pay-pulse.com", // Обязательный для бесшовки
+	@SerializedName("PaymentUrl") val paymentUrl: String = "https://sdk.pay-pulse.com/return", // Return URL бесшовки (перехватывается в WebView 3DS)
 	@SerializedName("InvoiceId") val invoiceId: String? = null, // Номер счета или заказа в вашей системе (необязательный)
 	@SerializedName("Description") val description: String? = null, // Описание оплаты в свободной форме (необязательный)
 	@SerializedName("AccountId") val accountId: String? = null, // Идентификатор пользователя в вашей системе (необязательный)

@@ -40,6 +40,11 @@ class KvellPaymentsApi @Inject constructor(private val apiService: KvellPayments
 			.subscribeOn(Schedulers.io())
 	}
 
+	fun getPayment(transactionId: Int): Single<KvellPaymentsTransactionResponse> {
+		return apiService.getPayment(PaymentGetBody(transactionId))
+			.subscribeOn(Schedulers.io())
+	}
+
 	fun getTinkoffPayQrLink(requestBody: TinkoffPayQrLinkBody): Single<KvellPaymentsGetTinkoffPayQrLinkResponse> {
 		return apiService.getTinkoffPayQrLink(requestBody)
 			.subscribeOn(Schedulers.io())

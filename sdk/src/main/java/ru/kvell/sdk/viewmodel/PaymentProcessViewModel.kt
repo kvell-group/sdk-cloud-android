@@ -85,19 +85,24 @@ internal class PaymentProcessViewModel(
 		}
 	}
 
-	fun postThreeDs(md: String, paRes: String) {
+	// Вызывается после возврата из 3DS: статус определяется запросом payments/get (PaRes недоступен — он в теле POST-формы)
+	fun finishThreeDs(md: String) {
 		val transactionId = md.toIntOrNull() ?: currentState.transaction?.transactionId ?: 0
-		disposable = api.postThreeDs(transactionId, paRes)
+		disposable = api.getPayment(transactionId)
 			.toObservable()
 			.observeOn(AndroidSchedulers.mainThread())
 			.map { response ->
-				val state: PaymentProcessViewState = if (response.success == true) {
-					currentState.copy(status = PaymentProcessStatus.Succeeded, transaction = response.transaction ?: currentState.transaction)
+				val tx = response.transaction
+				val succeeded = response.success == true ||
+						(tx?.status?.lowercase() ?: "") in listOf("completed", "authorized", "cancelled")
+				val state: PaymentProcessViewState = if (succeeded) {
+					currentState.copy(status = PaymentProcessStatus.Succeeded, transaction = tx ?: currentState.transaction)
 				} else {
 					currentState.copy(
 						status = PaymentProcessStatus.Failed,
-						errorMessage = response.message ?: response.transaction?.cardHolderMessage,
-						reasonCode = response.transaction?.reasonCode
+						transaction = tx ?: currentState.transaction,
+						errorMessage = response.message ?: tx?.cardHolderMessage,
+						reasonCode = tx?.reasonCode
 					)
 				}
 				stateChanged(state)
