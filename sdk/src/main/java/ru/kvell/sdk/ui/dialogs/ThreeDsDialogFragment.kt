@@ -5,6 +5,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +33,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 	}
 
 	companion object {
+		private const val TAG = "KvellSDK3DS"
 		private const val POST_BACK_URL = "https://api.pay-pulse.example/payments/get3dsData"
 		// Return URL бесшовки (совпадает с PaymentUrl в charge) — сигнал завершения 3DS
 		private const val RETURN_URL_PREFIX = "https://sdk.pay-pulse.com/return"
@@ -61,6 +65,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 	override fun onDestroyView() {
 		super.onDestroyView()
+		pollHandler.removeCallbacks(pollRunnable)
 		_binding = null
 	}
 
@@ -95,15 +100,32 @@ class ThreeDsDialogFragment : DialogFragment() {
 					.append("&MD=").append(URLEncoder.encode(md, "UTF-8"))
 					.append("&TermUrl=").append(URLEncoder.encode(POST_BACK_URL, "UTF-8"))
 					.toString()
-			binding.webView.postUrl(acsUrl, params.toByteArray())
+				Log.d(TAG, "POST acsUrl=$acsUrl body=$params")
+				binding.webView.postUrl(acsUrl, params.toByteArray())
 		} catch (e: UnsupportedEncodingException) {
 			e.printStackTrace()
 		}
+
+		startPaResPolling()
 
 		binding.icClose.setOnClickListener {
 			listener?.onAuthorizationFailed(null)
 			dismiss()
 		}
+	}
+
+	private val pollHandler = Handler(Looper.getMainLooper())
+	private val pollRunnable = object : Runnable {
+		override fun run() {
+			if (returnHandled) return
+			_binding?.webView?.let { extractPaResFromForm(it) }
+			if (!returnHandled) pollHandler.postDelayed(this, 300)
+		}
+	}
+
+	// Опрос DOM: как только на странице 3ds/return появятся поля PaRes/MD — читаем и завершаем 3DS
+	private fun startPaResPolling() {
+		pollHandler.postDelayed(pollRunnable, 500)
 	}
 
 	override fun onStart() {
@@ -114,51 +136,88 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 	private inner class ThreeDsWebViewClient : WebViewClient() {
 		override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-			return handleReturnUrl(request.url.toString())
+			return handleReturnNavigation(view, request.url.toString())
 		}
 
 		@Deprecated("Deprecated in Java")
 		override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-			return handleReturnUrl(url)
+			return handleReturnNavigation(view, url)
 		}
 
 		// POST-сабмит формы не вызывает shouldOverrideUrlLoading — ловим return URL в onPageStarted
 		override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+			Log.d(TAG, "onPageStarted: $url")
 			if (url.startsWith(RETURN_URL_PREFIX)) {
 				view.stopLoading()
-				handleReturnUrl(url)
+				handleReturnNavigation(view, url)
 			} else {
 				super.onPageStarted(view, url, favicon)
 			}
 		}
 
 		override fun onPageFinished(view: WebView, url: String) {
-			if (url.toLowerCase(Locale.getDefault()) == POST_BACK_URL.toLowerCase(Locale.getDefault())) {
-				view.isGone = true
-				view.loadUrl("javascript:window.JavaScriptThreeDs.processHTML('<head>'+document.getElementsByTagName('html')[0].innerHTML+'</head>');")
-			}
+			Log.d(TAG, "onPageFinished: $url")
+			// Страница /3ds/return содержит форму c полями PaRes/MD и автосабмитится на PaymentUrl.
+			// Считываем значения полей и завершаем 3DS через post3ds.
+			extractPaResFromForm(view)
 		}
 	}
 
 	private var returnHandled = false
 
-	// Перехватываем return URL бесшовки и завершаем 3DS
-	private fun handleReturnUrl(url: String): Boolean {
+	// Переход на return URL: PaRes/MD из query (GET) либо добираем из формы страницы-отправителя (POST)
+	private fun handleReturnNavigation(view: WebView, url: String): Boolean {
 		if (!url.startsWith(RETURN_URL_PREFIX)) {
 			return false
 		}
-		if (returnHandled) {
-			return true
-		}
-		returnHandled = true
 		val uri = Uri.parse(url)
-		val resultMd = uri.getQueryParameter("MD") ?: md
-		val paRes = uri.getQueryParameter("PaRes") ?: ""
+		val queryPaRes = uri.getQueryParameter("PaRes")
+		if (!queryPaRes.isNullOrEmpty()) {
+			complete(uri.getQueryParameter("MD") ?: md, queryPaRes)
+		} else {
+			extractPaResFromForm(view, completeIfEmpty = true)
+		}
+		return true
+	}
+
+	// Читаем скрытые поля формы 3DS (PaRes/MD) со страницы 3ds/return
+	private fun extractPaResFromForm(view: WebView, completeIfEmpty: Boolean = false) {
+		if (returnHandled) return
+		val script = "(function(){var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
+				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')});})()"
+		view.evaluateJavascript(script) { result ->
+			var resultMd = md
+			var paRes = ""
+			try {
+				if (result != null && result != "null" && result != "\"null\"") {
+					Log.d(TAG, "form fields: $result")
+				}
+				val clean = (result ?: "").trim('"').replace("\\\"", "\"")
+				if (clean.startsWith("{")) {
+					val obj = JsonParser().parse(clean).asJsonObject
+					if (obj.has("PaRes") && !obj.get("PaRes").isJsonNull) paRes = obj.get("PaRes").asString
+					if (obj.has("MD") && !obj.get("MD").isJsonNull) resultMd = obj.get("MD").asString
+				}
+			} catch (e: Exception) {
+				e.printStackTrace()
+			}
+			if (paRes.isNotEmpty()) {
+				complete(resultMd, paRes)
+			} else if (completeIfEmpty) {
+				complete(md, "")
+			}
+		}
+	}
+
+	private fun complete(resultMd: String, paRes: String) {
+		if (returnHandled) return
+		returnHandled = true
+		Log.d(TAG, "3DS complete: MD=$resultMd PaRes=${if (paRes.isEmpty()) "<empty>" else paRes}")
+		pollHandler.removeCallbacks(pollRunnable)
 		activity?.runOnUiThread {
 			listener?.onAuthorizationCompleted(resultMd, paRes)
 			dismissAllowingStateLoss()
 		}
-		return true
 	}
 
 	internal inner class ThreeDsJavaScriptInterface {

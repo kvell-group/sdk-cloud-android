@@ -85,14 +85,24 @@ internal class PaymentProcessViewModel(
 		}
 	}
 
-	// Вызывается после возврата из 3DS: статус определяется запросом payments/get (PaRes недоступен — он в теле POST-формы)
-	fun finishThreeDs(md: String) {
+	// Вызывается после возврата из 3DS: при наличии PaRes финализируем через post3ds, затем читаем статус через payments/get
+	fun finishThreeDs(md: String, paRes: String) {
 		val transactionId = md.toIntOrNull() ?: currentState.transaction?.transactionId ?: 0
-		disposable = api.getPayment(transactionId)
+		// post3ds лишь финализирует 3DS и необязателен — его ошибку игнорируем, а итог всегда читаем из payments/get
+		val source = if (paRes.isNotEmpty()) {
+			api.postThreeDs(transactionId, paRes)
+				.ignoreElement()
+				.onErrorComplete()
+				.andThen(api.getPayment(transactionId))
+		} else {
+			api.getPayment(transactionId)
+		}
+		disposable = source
 			.toObservable()
 			.observeOn(AndroidSchedulers.mainThread())
 			.map { response ->
 				val tx = response.transaction
+				Log.d("KvellSDK3DS", "payments/get: txId=${tx?.transactionId} status=${tx?.status} success=${response.success}")
 				val succeeded = response.success == true ||
 						(tx?.status?.lowercase() ?: "") in listOf("completed", "authorized", "cancelled")
 				val state: PaymentProcessViewState = if (succeeded) {

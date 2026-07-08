@@ -68,12 +68,6 @@ internal class PaymentOptionsFragment :
 	override val viewModel: PaymentOptionsViewModel by viewModels()
 
 	override fun render(state: PaymentOptionsViewState) {
-		if ((activity as PaymentActivity).googlePayAvailable) {
-			binding.buttonGooglepay.root.visibility = View.VISIBLE
-		} else {
-			binding.buttonGooglepay.root.visibility = View.GONE
-		}
-
 		if ((activity as PaymentActivity).yandexPayAvailable) {
 			binding.buttonYandexpay.visibility = View.VISIBLE
 		} else {
@@ -191,12 +185,6 @@ internal class PaymentOptionsFragment :
 			)
 
 			(activity as PaymentActivity).runYandexPay(orderDetails)
-			dismiss()
-		}
-
-		binding.buttonGooglepay.root.setOnClickListener {
-			val listener = requireActivity() as? IPaymentOptionsFragment
-			listener?.onGooglePayClicked()
 			dismiss()
 		}
 

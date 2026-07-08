@@ -113,9 +113,7 @@
 
             <EditText
                 android:id="@+id/edit_email"
-                style="@style/CPEditText"
-                android:hint="test@cp.ru"
-                android:text="test@cp.ru"/>
+                style="@style/CPEditText" />
 
             <TextView
                 style="@style/CPETextView"

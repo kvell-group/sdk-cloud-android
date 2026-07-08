@@ -13,13 +13,25 @@
     <string name="kvell_text_options_email_require">Для оплаты введите E-mail</string>
     <string name="kvell_text_options_card_be_saved">При оплате данные вашей карты сохранятся</string>
 
+    <string name="kvell_text_secure_title">Безопасный платёж</string>
+    <string name="kvell_text_secure_description">Все данные зашифрованы и передаются по защищённому протоколу TLS v1.2</string>
+    <string name="kvell_text_developed">Разработано в KVELL</string>
+    <string name="kvell_text_support_phone">+7 (495) 120-22-50</string>
+    <string name="kvell_text_support_email">support@kvell.ru</string>
+
     <string name="kvell_text_card_title">Оплата картой</string>
     <string name="kvell_text_card_hint_number">Номер карты</string>
     <string name="kvell_text_card_hint_exp">ММ / ГГ</string>
     <string name="kvell_text_card_hint_cvv">CVV</string>
     <string name="kvell_text_card_pay_button">Оплатить %s</string>
+    <string name="kvell_text_card_label_number">Номер карты</string>
+    <string name="kvell_text_card_label_exp">Срок действия</string>
+    <string name="kvell_text_card_label_cvv">CVV/CVC</string>
+    <string name="kvell_text_card_label_holder">Имя на карте</string>
+    <string name="kvell_text_card_holder_hint">IVAN IVANOV</string>
+    <string name="kvell_text_card_brand">KVELL.Pay</string>
 
-    <string name="kvell_text_process_title">Оплата в процессе</string>
+    <string name="kvell_text_process_title">Ожидание оплаты</string>
     <string name="kvell_text_process_title_success">Оплата прошла успешно</string>
     <string name="kvell_text_process_button_success">Отлично!</string>
     <string name="kvell_text_process_title_error">Операция отклонена</string>

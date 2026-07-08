@@ -19,6 +19,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/image_logo"
+        android:layout_width="wrap_content"
+        android:layout_height="28dp"
+        android:layout_marginTop="12dp"
+        android:adjustViewBounds="true"
+        android:src="@drawable/kvell_logo"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/image_drag_handle" />
+
     <TextView
         android:id="@+id/text_title"
         style="@style/kvell_TextTitle"
@@ -26,7 +36,7 @@
         android:layout_height="wrap_content"
         android:text="@string/kvell_text_options_title"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/image_drag_handle" />
+        app:layout_constraintTop_toBottomOf="@id/image_logo" />
 
     <LinearLayout
         android:id="@+id/layout_buttons"
@@ -42,6 +52,7 @@
             style="@style/kvell_ButtonBlue"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/kvell_bg_rounded_black_button"
             android:text="@string/kvell_text_options_card" />
 
         <ImageButton
@@ -54,13 +65,6 @@
             android:src="@drawable/kvell_button_tinkoff_pay"
             android:text="@string/kvell_text_options_card"
             android:visibility="gone"/>
-
-        <include
-            android:id="@+id/button_googlepay"
-            layout="@layout/googlepay_button"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="16dp" />
 
         <com.yandex.pay.core.ui.YandexPayButton
             android:id="@+id/button_yandexpay"
@@ -121,7 +125,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:button="@drawable/kvell_ic_checkbox_selector"
         android:fontFamily="@font/sf_pro_text_regular"
         android:gravity="center_vertical"
         android:letterSpacing="0.01"
@@ -129,6 +132,7 @@
         android:paddingStart="10dp"
         android:text="@string/kvell_text_options_email_checkbox"
         android:textColor="#8c949f"
+        app:buttonTint="@color/kvell_black"
         android:textSize="16sp"
         android:textStyle="normal"
         app:layout_constraintStart_toStartOf="parent"
@@ -199,14 +203,166 @@
         app:layout_constraintBottom_toBottomOf="@id/text_card_be_saved"
         app:layout_constraintStart_toEndOf="@id/text_card_be_saved" />
 
-    <!--"@drawable/kvell_secured_logo"-->
-    <ImageView
-        android:layout_width="210dp"
+    <LinearLayout
+        android:id="@+id/layout_secure_info"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/kvell_margin_big"
-        android:src="@null"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_card_be_saved" />
+        app:layout_constraintTop_toBottomOf="@id/text_card_be_saved">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="26dp"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/img_save_card" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/rubik_medium"
+                    android:letterSpacing="0.01"
+                    android:text="@string/kvell_text_secure_title"
+                    android:textColor="#14151A"
+                    android:textSize="18sp"
+                    android:textStyle="normal" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/sf_pro_text_regular"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="4sp"
+                    android:text="@string/kvell_text_secure_description"
+                    android:textColor="#8c949f"
+                    android:textSize="14sp"
+                    android:textStyle="normal" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="@font/sf_pro_text_regular"
+            android:text="@string/kvell_text_developed"
+            android:textColor="#14151A"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="13dp"
+                android:layout_height="17dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/img_phone" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro_text_regular"
+                android:text="@string/kvell_text_support_phone"
+                android:textColor="#14151A"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="#d5d9df" />
+
+            <ImageView
+                android:layout_width="17dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/img_email" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro_text_regular"
+                android:text="@string/kvell_text_support_email"
+                android:textColor="#14151A"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="46dp"
+                android:layout_height="15dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_visa" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="37dp"
+                android:layout_height="23dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_master_card" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="55dp"
+                android:layout_height="16dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_mir" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="37dp"
+                android:layout_height="23dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_union_pay" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="34dp"
+                android:layout_height="23dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_pci" />
+        </LinearLayout>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -168,7 +168,7 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 				val listener = requireActivity() as? IPaymentProcessFragment
 
 				if (status == PaymentProcessStatus.Succeeded) {
-					binding.iconStatus.setImageResource(R.drawable.kvell_ic_success)
+					binding.iconStatus.setImageResource(R.drawable.img_success)
 					binding.textStatus.setText(R.string.kvell_text_process_title_success)
 					binding.textDescription.text = ""
 					binding.buttonFinish.setText(R.string.kvell_text_process_button_success)
@@ -182,7 +182,7 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 					}
 				} else {
 
-					binding.iconStatus.setImageResource(R.drawable.kvell_ic_failure)
+					binding.iconStatus.setImageResource(R.drawable.img_not_success)
 					binding.textStatus.text =
 						context?.let { ApiError.getErrorDescription(it, currentState?.reasonCode.toString()) }
 					binding.textDescription.text =
@@ -203,7 +203,7 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 	}
 
 	override fun onAuthorizationCompleted(md: String, paRes: String) {
-		viewModel.finishThreeDs(md)
+		viewModel.finishThreeDs(md, paRes)
 	}
 
 	override fun onAuthorizationFailed(error: String?) {
