@@ -7,12 +7,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.core.content.ContextCompat
 import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import ru.kvell.sdk.R
 import ru.kvell.sdk.databinding.DialogKvellPaymentProcessBinding
 import ru.kvell.sdk.models.ApiError
+import ru.kvell.sdk.models.Currency
 import ru.kvell.sdk.ui.PaymentActivity
 import ru.kvell.sdk.ui.dialogs.base.BasePaymentDialogFragment
 import ru.kvell.sdk.util.InjectorUtils
@@ -57,6 +60,11 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 	private var _binding: DialogKvellPaymentProcessBinding? = null
 
 	private val binding get() = _binding!!
+
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		setStyle(STYLE_NO_TITLE, R.style.kvell_DialogFullScreen)
+	}
 
 	override fun onCreateView(
 		inflater: LayoutInflater,
@@ -111,8 +119,15 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 		arguments?.getString(ARG_CRYPTOGRAM) ?: ""
 	}
 
+	override fun onStart() {
+		super.onStart()
+		dialog?.window?.setLayout(MATCH_PARENT, MATCH_PARENT)
+	}
+
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
+
+		renderOrderSummary()
 
 		if (savedInstanceState == null) {
 			activity().component.inject(viewModel)
@@ -137,14 +152,14 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 
 		when (status) {
 			PaymentProcessStatus.InProcess -> {
-				binding.iconStatus.setImageResource(R.drawable.kvell_ic_progress)
+				showLoader(true)
 				binding.textStatus.setText(R.string.kvell_text_process_title)
 				binding.textDescription.text = ""
 				binding.buttonFinish.isInvisible = true
 			}
 
 			PaymentProcessStatus.TinkoffPay -> {
-				binding.iconStatus.setImageResource(R.drawable.kvell_ic_progress)
+				showLoader(true)
 				binding.textStatus.setText(R.string.kvell_text_process_title_tinkoff_pay)
 				binding.textDescription.setText(R.string.kvell_text_process_description_tinkoff_pay)
 				binding.buttonFinish.isInvisible = false
@@ -161,8 +176,9 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 			}
 
 			PaymentProcessStatus.Succeeded, PaymentProcessStatus.Failed -> {
+				showLoader(false)
 				binding.buttonFinish.isInvisible = false
-				binding.buttonFinish.setBackgroundResource(R.drawable.kvell_bg_rounded_blue_button)
+				binding.buttonFinish.setBackgroundResource(R.drawable.kvell_bg_rounded_black_button)
 				binding.buttonFinish.setTextColor(context?.let { ContextCompat.getColor(it, R.color.kvell_white) } ?: 0xFFFFFF)
 
 				val listener = requireActivity() as? IPaymentProcessFragment
@@ -183,10 +199,10 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 				} else {
 
 					binding.iconStatus.setImageResource(R.drawable.img_not_success)
-					binding.textStatus.text =
-						context?.let { ApiError.getErrorDescription(it, currentState?.reasonCode.toString()) }
-					binding.textDescription.text =
-						context?.let { ApiError.getErrorDescriptionExtra(it, currentState?.reasonCode.toString()) }
+					binding.textStatus.setText(R.string.kvell_text_process_title_error)
+					val reason = context?.let { ApiError.getErrorDescription(it, currentState?.reasonCode.toString()) } ?: ""
+					val code = currentState?.reasonCode
+					binding.textDescription.text = if (code != null && code != 0) "$reason ($code)" else reason
 
 					binding.buttonFinish.setText(R.string.kvell_text_process_button_error)
 
@@ -200,6 +216,17 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 				}
 			}
 		}
+	}
+
+	private fun showLoader(loading: Boolean) {
+		binding.progressStatus.isVisible = loading
+		binding.iconStatus.isVisible = !loading
+	}
+
+	private fun renderOrderSummary() {
+		val data = paymentConfiguration?.paymentData ?: return
+		val amount = data.amount.toDoubleOrNull() ?: 0.0
+		binding.textOrderTotal.text = String.format("%.2f %s", amount, Currency.getSymbol(data.currency))
 	}
 
 	override fun onAuthorizationCompleted(md: String, paRes: String) {

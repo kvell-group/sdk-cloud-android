@@ -52,7 +52,7 @@ internal class PaymentProcessViewModel(
 									  name = null,
 									  cryptogram = cryptogram,
 									  invoiceId = paymentData.invoiceId ?: "",
-									  description = paymentData.description ?: "",
+									  description = paymentData.description?.takeIf { it.isNotBlank() },
 									  accountId = paymentData.accountId ?: "",
 									  email = paymentData.email ?: "",
 									  payer = paymentData.payer,

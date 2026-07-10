@@ -3,72 +3,276 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_gravity="bottom"
-    android:background="@drawable/kvell_bg_rounded_dialog_inset"
-    android:paddingStart="48dp"
-    android:paddingTop="28dp"
-    android:paddingEnd="48dp"
-    android:paddingBottom="40dp">
+    android:layout_height="match_parent"
+    android:background="@color/kvell_white"
+    android:paddingStart="20dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="16dp">
 
     <ImageView
-        android:id="@+id/icon_status"
+        android:id="@+id/image_logo"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/kvell_ic_progress"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_height="28dp"
+        android:adjustViewBounds="true"
+        android:src="@drawable/kvell_logo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/text_status"
-        style="@style/kvell_TextTitle"
+    <View
+        android:id="@+id/divider_summary"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/kvell_margin_big"
-        android:gravity="center"
-        android:textColor="@color/kvell_dark"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/icon_status" />
-
-    <TextView
-        android:id="@+id/text_description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:fontFamily="@font/sf_pro_text_regular"
-        android:gravity="center"
-        android:letterSpacing="0.01"
-        android:lineSpacingExtra="6sp"
-        android:textColor="#444d5b"
-        android:textSize="18sp"
-        android:textStyle="normal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_status" />
-
-    <Button
-        android:id="@+id/button_finish"
-        style="@style/kvell_ButtonBlue"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="1dp"
         android:layout_marginTop="24dp"
-        android:text="@string/kvell_text_process_button_success"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_description" />
+        android:background="#ECEDF0"
+        app:layout_constraintTop_toBottomOf="@id/image_logo" />
 
-    <!--"@drawable/kvell_secured_logo"-->
-    <ImageView
-        android:layout_width="210dp"
+    <TextView
+        android:id="@+id/text_total_label"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/kvell_margin_big"
-        android:src="@null"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="14dp"
+        android:fontFamily="@font/rubik_medium"
+        android:letterSpacing="0.01"
+        android:text="@string/kvell_text_process_total"
+        android:textColor="#14151A"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider_summary" />
+
+    <TextView
+        android:id="@+id/text_order_total"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/rubik_medium"
+        android:letterSpacing="0.01"
+        android:textColor="#14151A"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@id/text_total_label"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/text_total_label" />
+
+    <!-- Статусный блок: иконка + заголовок + подзаголовок + кнопка, по центру между составом и футером -->
+    <LinearLayout
+        android:id="@+id/layout_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/layout_secure_info"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/button_finish" />
+        app:layout_constraintTop_toBottomOf="@id/text_total_label">
 
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progress_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:indicatorColor="#14151A"
+            app:indicatorSize="52dp"
+            app:trackCornerRadius="4dp"
+            app:trackThickness="4dp" />
 
+        <ImageView
+            android:id="@+id/icon_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/text_status"
+            style="@style/kvell_TextTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/kvell_margin_big"
+            android:gravity="center"
+            android:textColor="@color/kvell_dark" />
+
+        <TextView
+            android:id="@+id/text_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/sf_pro_text_regular"
+            android:gravity="center"
+            android:letterSpacing="0.01"
+            android:lineSpacingExtra="6sp"
+            android:textColor="#8B95A1"
+            android:textSize="16sp"
+            android:textStyle="normal" />
+
+        <Button
+            android:id="@+id/button_finish"
+            style="@style/kvell_ButtonBlue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/kvell_bg_rounded_black_button"
+            android:paddingStart="40dp"
+            android:paddingEnd="40dp"
+            android:text="@string/kvell_text_process_button_success" />
+    </LinearLayout>
+
+    <!-- Футер (как на экране опций) -->
+    <LinearLayout
+        android:id="@+id/layout_secure_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="26dp"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/img_save_card" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/rubik_medium"
+                    android:letterSpacing="0.01"
+                    android:text="@string/kvell_text_secure_title"
+                    android:textColor="#14151A"
+                    android:textSize="18sp"
+                    android:textStyle="normal" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/sf_pro_text_regular"
+                    android:letterSpacing="-0.01"
+                    android:lineSpacingExtra="4sp"
+                    android:text="@string/kvell_text_secure_description"
+                    android:textColor="#8c949f"
+                    android:textSize="14sp"
+                    android:textStyle="normal" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="@font/sf_pro_text_regular"
+            android:text="@string/kvell_text_developed"
+            android:textColor="#14151A"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="13dp"
+                android:layout_height="17dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/img_phone" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro_text_regular"
+                android:text="@string/kvell_text_support_phone"
+                android:textColor="#14151A"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="#d5d9df" />
+
+            <ImageView
+                android:layout_width="17dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/img_email" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/sf_pro_text_regular"
+                android:text="@string/kvell_text_support_email"
+                android:textColor="#14151A"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="46dp"
+                android:layout_height="15dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_visa" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="37dp"
+                android:layout_height="23dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_master_card" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="55dp"
+                android:layout_height="16dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_mir" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="37dp"
+                android:layout_height="23dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_union_pay" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:layout_width="34dp"
+                android:layout_height="23dp"
+                android:alpha="0.4"
+                android:src="@drawable/img_pci" />
+        </LinearLayout>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

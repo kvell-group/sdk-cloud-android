@@ -249,8 +249,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:background="@drawable/kvell_bg_rounded_black_button"
-        android:drawableStart="@drawable/kvell_ic_lock"
-        android:drawablePadding="8dp"
         android:text="@string/kvell_text_card_pay_button"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_brand" />

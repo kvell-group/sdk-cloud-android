@@ -32,10 +32,11 @@
     <string name="kvell_text_card_brand">KVELL.Pay</string>
 
     <string name="kvell_text_process_title">Ожидание оплаты</string>
+    <string name="kvell_text_process_total">Итого</string>
     <string name="kvell_text_process_title_success">Оплата прошла успешно</string>
-    <string name="kvell_text_process_button_success">Отлично!</string>
-    <string name="kvell_text_process_title_error">Операция отклонена</string>
-    <string name="kvell_text_process_button_error">Повторить попытку</string>
+    <string name="kvell_text_process_button_success">Вернуться в магазин</string>
+    <string name="kvell_text_process_title_error">Оплата не прошла</string>
+    <string name="kvell_text_process_button_error">Попробовать снова</string>
 
     <string name="kvell_text_process_title_tinkoff_pay">Ждем ответа\noт Тинькофф Pay</string>
     <string name="kvell_text_process_description_tinkoff_pay">Если перейти и оплатить в приложении не удалось, попробуйте снова или выберите другой способ оплаты</string>

@@ -28,6 +28,12 @@
         <item name="android:windowIsFloating">true</item>
     </style>
 
+    <style name="kvell_DialogFullScreen" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@color/kvell_white</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+    </style>
+
     <style name="kvell_TextTitle" parent="Widget.MaterialComponents.TextView">
         <item name="android:layout_marginTop">12dp</item>
         <item name="android:ellipsize">end</item>
