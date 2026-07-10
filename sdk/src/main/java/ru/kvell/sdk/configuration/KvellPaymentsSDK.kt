@@ -82,7 +82,7 @@ interface KvellPaymentsSDK {
 
 		private fun createClient(publicId: String?, apiSecret: String = ""): OkHttpClient {
 			val okHttpClientBuilder = OkHttpClient.Builder()
-					.addInterceptor(HttpLoggingInterceptor()
+					.addInterceptor(HttpLoggingInterceptor { message -> android.util.Log.i("KvellHttp", message) }
 											.setLevel(HttpLoggingInterceptor.Level.BODY))
 			val client = okHttpClientBuilder
 					.connectTimeout(20, TimeUnit.SECONDS)

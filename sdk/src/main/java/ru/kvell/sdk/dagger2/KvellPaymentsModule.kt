@@ -1,5 +1,6 @@
 package ru.kvell.sdk.dagger2
 
+import android.util.Log
 import dagger.Component
 import dagger.Module
 import dagger.Provides
@@ -30,8 +31,9 @@ class KvellPaymentsModule {
 class KvellPaymentsNetModule(private val publicId: String, private val apiSecret: String = "", private var apiUrl: String = Constants.baseApiUrl) {
 	@Provides
 	@Singleton
-	fun providesHttpLoggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor()
-		.setLevel(HttpLoggingInterceptor.Level.BODY)
+	fun providesHttpLoggingInterceptor(): HttpLoggingInterceptor =
+		HttpLoggingInterceptor { message -> Log.i("KvellHttp", message) }
+			.setLevel(HttpLoggingInterceptor.Level.BODY)
 
 	@Provides
 	@Singleton

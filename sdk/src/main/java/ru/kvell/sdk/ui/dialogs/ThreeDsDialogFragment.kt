@@ -11,10 +11,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import java.io.ByteArrayInputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import com.google.gson.JsonParser
@@ -83,6 +88,8 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 	private var listener: ThreeDSDialogListener? = null
 
+	private var webViewUserAgent: String? = null
+
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
 
@@ -91,6 +98,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 		binding.webView.webViewClient = ThreeDsWebViewClient()
 		binding.webView.settings.domStorageEnabled = true
 		binding.webView.settings.javaScriptEnabled = true
+		webViewUserAgent = binding.webView.settings.userAgentString
 		binding.webView.settings.javaScriptCanOpenWindowsAutomatically = true
 		binding.webView.addJavascriptInterface(ThreeDsJavaScriptInterface(), "JavaScriptThreeDs")
 
@@ -144,11 +152,26 @@ class ThreeDsDialogFragment : DialogFragment() {
 			return handleReturnNavigation(view, url)
 		}
 
+		// Страница 3ds/return содержит форму с PaRes, которая мгновенно автосабмитится на
+		// PaymentUrl (окно ~5 мс — опрос DOM не успевает). Пытаемся прочитать её сами.
+		override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+			val url = request.url.toString()
+			if (url.contains("/3ds/return")) {
+				Log.d(TAG, "intercept: method=${request.method} mainFrame=${request.isForMainFrame} url=$url")
+				if (!returnHandled && request.isForMainFrame) {
+					captureReturnPage(url)?.let { return it }
+				}
+			}
+			return super.shouldInterceptRequest(view, request)
+		}
+
 		// POST-сабмит формы не вызывает shouldOverrideUrlLoading — ловим return URL в onPageStarted
 		override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
 			Log.d(TAG, "onPageStarted: $url")
+			// Хук ставим на каждой странице как можно раньше: страница 3ds/return автосабмитит
+			// форму c PaRes за считанные мс — опрос DOM в это окно не попадает.
+			injectSubmitHook(view)
 			if (url.startsWith(RETURN_URL_PREFIX)) {
-				view.stopLoading()
 				handleReturnNavigation(view, url)
 			} else {
 				super.onPageStarted(view, url, favicon)
@@ -157,26 +180,81 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 		override fun onPageFinished(view: WebView, url: String) {
 			Log.d(TAG, "onPageFinished: $url")
+			injectSubmitHook(view)
 			// Страница /3ds/return содержит форму c полями PaRes/MD и автосабмитится на PaymentUrl.
 			// Считываем значения полей и завершаем 3DS через post3ds.
 			extractPaResFromForm(view)
 		}
 	}
 
+	// Синхронный перехват сабмита формы 3DS: form.submit() не порождает submit-событие,
+	// поэтому оборачиваем ещё и HTMLFormElement.prototype.submit. Как только форма уходит —
+	// сразу отдаём PaRes/MD во фрагмент через JS-интерфейс, без гонки с опросом DOM.
+	private fun injectSubmitHook(view: WebView) {
+		if (returnHandled) return
+		val js = "(function(){if(window.__kvellHook)return;window.__kvellHook=true;" +
+				"var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
+				"var cap=function(){var p=g('PaRes')||g('pares')||g('CRes')||g('cres');var m=g('MD')||g('md');" +
+				"if(p){try{JavaScriptThreeDs.processData(m||'',p);}catch(e){}}};" +
+				"document.addEventListener('submit',cap,true);" +
+				"try{var s=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){cap();return s.apply(this,arguments);};}catch(e){}" +
+				"})()"
+		view.evaluateJavascript(js, null)
+	}
+
+	// Сами запрашиваем страницу 3ds/return (с куками WebView), парсим PaRes/MD и завершаем 3DS.
+	// Тот же HTML отдаём обратно в WebView, чтобы не делать второй запрос к серверу.
+	private fun captureReturnPage(url: String): WebResourceResponse? {
+		return try {
+			val cookie = CookieManager.getInstance().getCookie(url)
+			val userAgent = webViewUserAgent
+			val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+				requestMethod = "GET"
+				instanceFollowRedirects = false
+				if (!cookie.isNullOrEmpty()) setRequestProperty("Cookie", cookie)
+				if (!userAgent.isNullOrEmpty()) setRequestProperty("User-Agent", userAgent)
+				connectTimeout = 15000
+				readTimeout = 15000
+			}
+			val code = connection.responseCode
+			val stream = if (code in 200..399) connection.inputStream else connection.errorStream
+			val bytes = stream?.readBytes() ?: ByteArray(0)
+			val mime = (connection.contentType ?: "text/html").substringBefore(";").trim()
+					.ifEmpty { "text/html" }
+
+			val doc = Jsoup.parse(String(bytes, Charsets.UTF_8))
+			val paRes = doc.select("[name=PaRes],[name=pares],[name=CRes],[name=cres]")
+					.firstOrNull()?.attr("value")
+			Log.d(TAG, "3ds/return fetched ($code), PaRes=${if (paRes.isNullOrEmpty()) "<none>" else "<len ${paRes.length}>"}")
+			if (!paRes.isNullOrEmpty()) {
+				activity?.runOnUiThread { complete(md, paRes) }
+			}
+			WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
+		} catch (e: Exception) {
+			Log.d(TAG, "3ds/return fetch failed: ${e.message}")
+			null
+		}
+	}
+
 	private var returnHandled = false
 
-	// Переход на return URL: PaRes/MD из query (GET) либо добираем из формы страницы-отправителя (POST)
+	// Переход на return URL — сигнал завершения 3DS. PaRes мог прийти из query (GET),
+	// из submit-хука (processData) или из формы страницы. Если PaRes нет — всё равно
+	// гарантированно завершаем 3DS: дальше вызовется payments/get за финальным статусом.
 	private fun handleReturnNavigation(view: WebView, url: String): Boolean {
 		if (!url.startsWith(RETURN_URL_PREFIX)) {
 			return false
 		}
+		if (returnHandled) return true
 		val uri = Uri.parse(url)
 		val queryPaRes = uri.getQueryParameter("PaRes")
 		if (!queryPaRes.isNullOrEmpty()) {
 			complete(uri.getQueryParameter("MD") ?: md, queryPaRes)
-		} else {
-			extractPaResFromForm(view, completeIfEmpty = true)
+			return true
 		}
+		extractPaResFromForm(view, completeIfEmpty = false)
+		// Страховка: если PaRes так и не пришёл (пустая return-страница), завершаем без него.
+		pollHandler.postDelayed({ if (!returnHandled) complete(md, "") }, 500)
 		return true
 	}
 
@@ -221,6 +299,13 @@ class ThreeDsDialogFragment : DialogFragment() {
 	}
 
 	internal inner class ThreeDsJavaScriptInterface {
+		// Вызывается из submit-хука в момент отправки формы 3DS
+		@JavascriptInterface
+		fun processData(md: String?, paRes: String?) {
+			if (paRes.isNullOrEmpty()) return
+			activity?.runOnUiThread { complete(this@ThreeDsDialogFragment.md, paRes) }
+		}
+
 		@JavascriptInterface
 		fun processHTML(html: String?) {
 			val doc: Document = Jsoup.parse(html)
