@@ -59,6 +59,16 @@
 
             <TextView
                 style="@style/CPETextView"
+                android:text="API Secret:"/>
+
+            <EditText
+                android:id="@+id/edit_api_secret"
+                style="@style/CPEditText"
+                android:hint="45faa630-ea0b-49cb-a7e0-744c1e5a41e3"
+                android:text="45faa630-ea0b-49cb-a7e0-744c1e5a41e3"/>
+
+            <TextView
+                style="@style/CPETextView"
                 android:text="Amount:"/>
 
             <EditText

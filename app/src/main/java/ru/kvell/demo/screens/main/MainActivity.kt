@@ -51,6 +51,7 @@ class MainActivity : BaseActivity() {
 
 		val apiUrl = binding.editApiUrl.text.toString()
 		val publicId = binding.editPublicId.text.toString()
+		val apiSecret = binding.editApiSecret.text.toString()
 		val amount = binding.editAmount.text.toString()
 		val currency = binding.editCurrency.text.toString()
 		val invoiceId = binding.editInvoiceId.text.toString().let {
@@ -99,7 +100,7 @@ class MainActivity : BaseActivity() {
 
 		val configuration = PaymentConfiguration(
 			publicId = publicId,
-			apiSecret = ru.kvell.demo.support.Constants.API_SECRET,
+			apiSecret = apiSecret,
 			paymentData = paymentData,
 			scanner = CardIOScanner(),
 			requireEmail = false,
