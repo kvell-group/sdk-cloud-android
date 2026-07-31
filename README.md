@@ -1,7 +1,7 @@
 ## KvellPayments SDK for Android
 
 KvellPayments SDK позволяет интегрировать приём платежей в мобильные приложения для платформы Android.
-SDK работает с платёжным сервисом Kvell (pay-pulse) и даёт нативную платёжную форму вместо WebView.
+SDK работает с платёжным сервисом Kvell и даёт нативную платёжную форму вместо WebView.
 
 ### Требования
 Android 6.0 или выше (API level 23).

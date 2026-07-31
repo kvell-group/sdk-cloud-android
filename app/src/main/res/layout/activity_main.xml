@@ -45,7 +45,7 @@
             <EditText
                 android:id="@+id/edit_api_url"
                 style="@style/CPEditText"
-                android:hint="https://cloud.prod.pay-pulse.com/"/>
+                android:hint="https://cloud.wallet.kvell.group/"/>
 
             <TextView
                 style="@style/CPETextView"

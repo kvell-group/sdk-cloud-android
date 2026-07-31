@@ -39,9 +39,9 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 	companion object {
 		private const val TAG = "KvellSDK3DS"
-		private const val POST_BACK_URL = "https://api.pay-pulse.example/payments/get3dsData"
+		private const val POST_BACK_URL = "https://cloud.wallet.kvell.group/payments/get3dsData"
 		// Return URL бесшовки (совпадает с PaymentUrl в charge) — сигнал завершения 3DS
-		private const val RETURN_URL_PREFIX = "https://sdk.pay-pulse.com/return"
+		private const val RETURN_URL_PREFIX = "https://cloud.wallet.kvell.group/return"
 		private const val ARG_ACS_URL = "acs_url"
 		private const val ARG_MD = "md"
 		private const val ARG_PA_REQ = "pa_req"
