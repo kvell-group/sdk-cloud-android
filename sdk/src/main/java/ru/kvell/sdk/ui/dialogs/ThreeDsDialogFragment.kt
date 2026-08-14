@@ -127,13 +127,13 @@ class ThreeDsDialogFragment : DialogFragment() {
 		override fun run() {
 			if (returnHandled) return
 			_binding?.webView?.let { extractPaResFromForm(it) }
-			if (!returnHandled) pollHandler.postDelayed(this, 300)
+			if (!returnHandled) pollHandler.postDelayed(this, 150)
 		}
 	}
 
 	// Опрос DOM: как только на странице 3ds/return появятся поля PaRes/MD — читаем и завершаем 3DS
 	private fun startPaResPolling() {
-		pollHandler.postDelayed(pollRunnable, 500)
+		pollHandler.postDelayed(pollRunnable, 100)
 	}
 
 	override fun onStart() {
@@ -198,6 +198,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 				"if(p){try{JavaScriptThreeDs.processData(m||'',p);}catch(e){}}};" +
 				"document.addEventListener('submit',cap,true);" +
 				"try{var s=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){cap();return s.apply(this,arguments);};}catch(e){}" +
+				"cap();" +
 				"})()"
 		view.evaluateJavascript(js, null)
 	}
@@ -247,7 +248,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 		}
 		if (returnHandled) return true
 		val uri = Uri.parse(url)
-		val queryPaRes = uri.getQueryParameter("PaRes")
+		val queryPaRes = uri.getQueryParameter("PaRes") ?: uri.getQueryParameter("CRes")
 		if (!queryPaRes.isNullOrEmpty()) {
 			complete(uri.getQueryParameter("MD") ?: md, queryPaRes)
 			return true
@@ -262,7 +263,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 	private fun extractPaResFromForm(view: WebView, completeIfEmpty: Boolean = false) {
 		if (returnHandled) return
 		val script = "(function(){var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
-				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')});})()"
+				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')||g('CRes')||g('cres')});})()"
 		view.evaluateJavascript(script) { result ->
 			var resultMd = md
 			var paRes = ""
