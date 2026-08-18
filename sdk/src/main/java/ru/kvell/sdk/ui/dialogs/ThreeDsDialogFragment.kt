@@ -100,6 +100,8 @@ class ThreeDsDialogFragment : DialogFragment() {
 		binding.webView.settings.javaScriptEnabled = true
 		webViewUserAgent = binding.webView.settings.userAgentString
 		binding.webView.settings.javaScriptCanOpenWindowsAutomatically = true
+		CookieManager.getInstance().setAcceptCookie(true)
+		CookieManager.getInstance().setAcceptThirdPartyCookies(binding.webView, true)
 		binding.webView.addJavascriptInterface(ThreeDsJavaScriptInterface(), "JavaScriptThreeDs")
 
 		try {
