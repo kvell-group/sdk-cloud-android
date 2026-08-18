@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,6 +26,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import ru.kvell.sdk.databinding.DialogKvellThreeDsBinding
+import ru.kvell.sdk.util.ThreeDsLog
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 import java.util.*
@@ -38,10 +38,8 @@ class ThreeDsDialogFragment : DialogFragment() {
 	}
 
 	companion object {
-		private const val TAG = "KvellSDK3DS"
 		private const val POST_BACK_URL = "https://business.wallet.kvell.group/3ds/get3dsData"
-		// Форму с этим action не перехватываем - даём ей реально уйти POST-ом на get3dsData
-		private const val POST_BACK_PATH = "/3ds/get3dsData"
+		private const val RETURN_PAGE_PATH = "/3ds/return"
 		// Return URL бесшовки (совпадает с PaymentUrl в charge) — сигнал завершения 3DS
 		private const val RETURN_URL_PREFIX = "https://cloud.wallet.kvell.group/return"
 		private const val ARG_ACS_URL = "acs_url"
@@ -97,6 +95,9 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 		isCancelable = false
 
+		ThreeDsLog.start()
+		ThreeDsLog.d("3DS start: acsUrl=$acsUrl md=$md")
+
 		binding.webView.webViewClient = ThreeDsWebViewClient()
 		binding.webView.settings.domStorageEnabled = true
 		binding.webView.settings.javaScriptEnabled = true
@@ -112,7 +113,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 					.append("&MD=").append(URLEncoder.encode(md, "UTF-8"))
 					.append("&TermUrl=").append(URLEncoder.encode(POST_BACK_URL, "UTF-8"))
 					.toString()
-				Log.d(TAG, "POST acsUrl=$acsUrl body=$params")
+				ThreeDsLog.d("POST acsUrl=$acsUrl body=$params")
 				binding.webView.postUrl(acsUrl, params.toByteArray())
 		} catch (e: UnsupportedEncodingException) {
 			e.printStackTrace()
@@ -161,7 +162,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 		override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
 			val url = request.url.toString()
 			if (url.contains("/3ds/return")) {
-				Log.d(TAG, "intercept: method=${request.method} mainFrame=${request.isForMainFrame} url=$url")
+				ThreeDsLog.d("intercept: method=${request.method} mainFrame=${request.isForMainFrame} url=$url")
 				if (!returnHandled && request.isForMainFrame) {
 					captureReturnPage(url)?.let { return it }
 				}
@@ -171,7 +172,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 
 		// POST-сабмит формы не вызывает shouldOverrideUrlLoading — ловим return URL в onPageStarted
 		override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-			Log.d(TAG, "onPageStarted: $url")
+			ThreeDsLog.d("onPageStarted: $url")
 			// Хук ставим на каждой странице как можно раньше: страница 3ds/return автосабмитит
 			// форму c PaRes за считанные мс — опрос DOM в это окно не попадает.
 			injectSubmitHook(view)
@@ -183,7 +184,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 		}
 
 		override fun onPageFinished(view: WebView, url: String) {
-			Log.d(TAG, "onPageFinished: $url")
+			ThreeDsLog.d("onPageFinished: $url")
 			injectSubmitHook(view)
 			// Страница /3ds/return содержит форму c полями PaRes/MD и автосабмитится на PaymentUrl.
 			// Считываем значения полей и завершаем 3DS через post3ds.
@@ -198,9 +199,10 @@ class ThreeDsDialogFragment : DialogFragment() {
 		if (returnHandled) return
 		val js = "(function(){if(window.__kvellHook)return;window.__kvellHook=true;" +
 				"var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
-				"var cap=function(){var e=document.querySelector('[name=\"PaRes\"],[name=\"pares\"],[name=\"CRes\"],[name=\"cres\"]');" +
-				"var p=e?e.value:null;var m=g('MD')||g('md');var act=e&&e.form?(e.form.getAttribute('action')||''):'';" +
-				"if(p&&act.indexOf('" + POST_BACK_PATH + "')<0){try{JavaScriptThreeDs.processData(m||'',p);}catch(er){}}};" +
+				"var cap=function(){if(location.href.indexOf('" + RETURN_PAGE_PATH + "')<0)return;" +
+				"var e=document.querySelector('[name=\"PaRes\"],[name=\"pares\"],[name=\"CRes\"],[name=\"cres\"]');" +
+				"var p=e?e.value:null;var m=g('MD')||g('md');" +
+				"if(p){try{JavaScriptThreeDs.processData(m||'',p);}catch(er){}}};" +
 				"document.addEventListener('submit',cap,true);" +
 				"try{var s=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){cap();return s.apply(this,arguments);};}catch(e){}" +
 				"cap();" +
@@ -229,16 +231,15 @@ class ThreeDsDialogFragment : DialogFragment() {
 					.ifEmpty { "text/html" }
 
 			val doc = Jsoup.parse(String(bytes, Charsets.UTF_8))
-			val paResField = doc.select("[name=PaRes],[name=pares],[name=CRes],[name=cres]").firstOrNull()
-			val paRes = paResField?.attr("value")
-			val action = paResField?.parents()?.firstOrNull { it.tagName() == "form" }?.attr("action") ?: ""
-			Log.d(TAG, "3ds/return fetched ($code), PaRes=${if (paRes.isNullOrEmpty()) "<none>" else "<len ${paRes.length}>"}")
-			if (!paRes.isNullOrEmpty() && !action.contains(POST_BACK_PATH)) {
+			val paRes = doc.select("[name=PaRes],[name=pares],[name=CRes],[name=cres]")
+					.firstOrNull()?.attr("value")
+			ThreeDsLog.d("3ds/return fetched ($code), PaRes=${if (paRes.isNullOrEmpty()) "<none>" else "<len ${paRes.length}>"}")
+			if (!paRes.isNullOrEmpty()) {
 				activity?.runOnUiThread { complete(md, paRes) }
 			}
 			WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
 		} catch (e: Exception) {
-			Log.d(TAG, "3ds/return fetch failed: ${e.message}")
+			ThreeDsLog.d("3ds/return fetch failed: ${e.message}")
 			null
 		}
 	}
@@ -269,29 +270,29 @@ class ThreeDsDialogFragment : DialogFragment() {
 	private fun extractPaResFromForm(view: WebView, completeIfEmpty: Boolean = false) {
 		if (returnHandled) return
 		val script = "(function(){var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
-				"var e=document.querySelector('[name=\"PaRes\"],[name=\"pares\"],[name=\"CRes\"],[name=\"cres\"]');" +
-				"var act=e&&e.form?(e.form.getAttribute('action')||''):'';" +
-				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')||g('CRes')||g('cres'),Action:act});})()"
+				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')||g('CRes')||g('cres'),Href:location.href});})()"
 		view.evaluateJavascript(script) { result ->
 			var resultMd = md
 			var paRes = ""
-			var action = ""
+			var href = ""
 			try {
 				if (result != null && result != "null" && result != "\"null\"") {
-					Log.d(TAG, "form fields: $result")
+					ThreeDsLog.d("form fields: $result")
 				}
 				val clean = (result ?: "").trim('"').replace("\\\"", "\"")
 				if (clean.startsWith("{")) {
 					val obj = JsonParser().parse(clean).asJsonObject
 					if (obj.has("PaRes") && !obj.get("PaRes").isJsonNull) paRes = obj.get("PaRes").asString
 					if (obj.has("MD") && !obj.get("MD").isJsonNull) resultMd = obj.get("MD").asString
-					if (obj.has("Action") && !obj.get("Action").isJsonNull) action = obj.get("Action").asString
+					if (obj.has("Href") && !obj.get("Href").isJsonNull) href = obj.get("Href").asString
 				}
 			} catch (e: Exception) {
 				e.printStackTrace()
 			}
-			// Форму, ведущую на get3dsData, не перехватываем — она должна уйти на сервер
-			if (action.contains(POST_BACK_PATH)) return@evaluateJavascript
+			if (!href.contains(RETURN_PAGE_PATH)) {
+				if (completeIfEmpty) complete(md, "")
+				return@evaluateJavascript
+			}
 			if (paRes.isNotEmpty()) {
 				complete(resultMd, paRes)
 			} else if (completeIfEmpty) {
@@ -303,7 +304,7 @@ class ThreeDsDialogFragment : DialogFragment() {
 	private fun complete(resultMd: String, paRes: String) {
 		if (returnHandled) return
 		returnHandled = true
-		Log.d(TAG, "3DS complete: MD=$resultMd PaRes=${if (paRes.isEmpty()) "<empty>" else paRes}")
+		ThreeDsLog.d("3DS complete: MD=$resultMd PaRes=${if (paRes.isEmpty()) "<empty>" else paRes}")
 		pollHandler.removeCallbacks(pollRunnable)
 		activity?.runOnUiThread {
 			listener?.onAuthorizationCompleted(resultMd, paRes)

@@ -19,6 +19,7 @@ import ru.kvell.sdk.models.Currency
 import ru.kvell.sdk.ui.PaymentActivity
 import ru.kvell.sdk.ui.dialogs.base.BasePaymentDialogFragment
 import ru.kvell.sdk.util.InjectorUtils
+import ru.kvell.sdk.util.ThreeDsLog
 import ru.kvell.sdk.viewmodel.PaymentProcessViewModel
 import ru.kvell.sdk.viewmodel.PaymentProcessViewState
 
@@ -81,6 +82,8 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 	}
 
 	private var currentState: PaymentProcessViewState? = null
+
+	private var diagLogShared = false
 
 	override val viewModel: PaymentProcessViewModel by viewModels {
 		InjectorUtils.providePaymentProcessViewModelFactory(
@@ -207,6 +210,11 @@ internal class PaymentProcessFragment: BasePaymentDialogFragment<PaymentProcessV
 					binding.buttonFinish.setText(R.string.kvell_text_process_button_error)
 
 					listener?.onPaymentFailed(currentState?.transaction?.transactionId ?: 0, currentState?.reasonCode)
+
+					if (!diagLogShared && !ThreeDsLog.isEmpty()) {
+						diagLogShared = true
+						context?.let { ThreeDsLog.share(it) }
+					}
 
 					binding.buttonFinish.setOnClickListener {
 

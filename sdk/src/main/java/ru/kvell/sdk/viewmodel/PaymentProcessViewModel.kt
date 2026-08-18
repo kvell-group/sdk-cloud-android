@@ -15,6 +15,7 @@ import ru.kvell.sdk.api.models.QrLinkStatusWaitBody
 import ru.kvell.sdk.api.models.QrLinkStatusWaitResponse
 import ru.kvell.sdk.api.models.TinkoffPayQrLinkBody
 import ru.kvell.sdk.configuration.PaymentData
+import ru.kvell.sdk.util.ThreeDsLog
 import ru.kvell.sdk.ui.dialogs.PaymentProcessStatus
 import javax.inject.Inject
 
@@ -88,9 +89,12 @@ internal class PaymentProcessViewModel(
 	// Вызывается после возврата из 3DS: при наличии PaRes финализируем через post3ds, затем читаем статус через payments/get
 	fun finishThreeDs(md: String, paRes: String) {
 		val transactionId = md.toIntOrNull() ?: currentState.transaction?.transactionId ?: 0
+		ThreeDsLog.d("finishThreeDs: txId=$transactionId paRes=${if (paRes.isEmpty()) "<empty>" else "<len ${paRes.length}>"}")
 		// post3ds лишь финализирует 3DS и необязателен — его ошибку игнорируем, а итог всегда читаем из payments/get
 		val source = if (paRes.isNotEmpty()) {
 			api.postThreeDs(transactionId, paRes)
+				.doOnSuccess { ThreeDsLog.d("post3ds: success=${it.success} msg=${it.message} status=${it.transaction?.status} reason=${it.transaction?.reasonCode}") }
+				.doOnError { ThreeDsLog.d("post3ds error: ${it.message}") }
 				.ignoreElement()
 				.onErrorComplete()
 				.andThen(api.getPayment(transactionId))
@@ -102,7 +106,7 @@ internal class PaymentProcessViewModel(
 			.observeOn(AndroidSchedulers.mainThread())
 			.map { response ->
 				val tx = response.transaction
-				Log.d("KvellSDK3DS", "payments/get: txId=${tx?.transactionId} status=${tx?.status} success=${response.success}")
+				ThreeDsLog.d("payments/get: txId=${tx?.transactionId} status=${tx?.status} success=${response.success} msg=${response.message}")
 				val succeeded = response.success == true ||
 						(tx?.status?.lowercase() ?: "") in listOf("completed", "authorized", "cancelled")
 				val state: PaymentProcessViewState = if (succeeded) {
