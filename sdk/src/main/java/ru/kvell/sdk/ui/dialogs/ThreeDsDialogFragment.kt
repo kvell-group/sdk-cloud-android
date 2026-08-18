@@ -40,6 +40,8 @@ class ThreeDsDialogFragment : DialogFragment() {
 	companion object {
 		private const val TAG = "KvellSDK3DS"
 		private const val POST_BACK_URL = "https://business.wallet.kvell.group/3ds/get3dsData"
+		// Форму с этим action не перехватываем - даём ей реально уйти POST-ом на get3dsData
+		private const val POST_BACK_PATH = "/3ds/get3dsData"
 		// Return URL бесшовки (совпадает с PaymentUrl в charge) — сигнал завершения 3DS
 		private const val RETURN_URL_PREFIX = "https://cloud.wallet.kvell.group/return"
 		private const val ARG_ACS_URL = "acs_url"
@@ -196,8 +198,9 @@ class ThreeDsDialogFragment : DialogFragment() {
 		if (returnHandled) return
 		val js = "(function(){if(window.__kvellHook)return;window.__kvellHook=true;" +
 				"var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
-				"var cap=function(){var p=g('PaRes')||g('pares')||g('CRes')||g('cres');var m=g('MD')||g('md');" +
-				"if(p){try{JavaScriptThreeDs.processData(m||'',p);}catch(e){}}};" +
+				"var cap=function(){var e=document.querySelector('[name=\"PaRes\"],[name=\"pares\"],[name=\"CRes\"],[name=\"cres\"]');" +
+				"var p=e?e.value:null;var m=g('MD')||g('md');var act=e&&e.form?(e.form.getAttribute('action')||''):'';" +
+				"if(p&&act.indexOf('" + POST_BACK_PATH + "')<0){try{JavaScriptThreeDs.processData(m||'',p);}catch(er){}}};" +
 				"document.addEventListener('submit',cap,true);" +
 				"try{var s=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){cap();return s.apply(this,arguments);};}catch(e){}" +
 				"cap();" +
@@ -226,10 +229,11 @@ class ThreeDsDialogFragment : DialogFragment() {
 					.ifEmpty { "text/html" }
 
 			val doc = Jsoup.parse(String(bytes, Charsets.UTF_8))
-			val paRes = doc.select("[name=PaRes],[name=pares],[name=CRes],[name=cres]")
-					.firstOrNull()?.attr("value")
+			val paResField = doc.select("[name=PaRes],[name=pares],[name=CRes],[name=cres]").firstOrNull()
+			val paRes = paResField?.attr("value")
+			val action = paResField?.parents()?.firstOrNull { it.tagName() == "form" }?.attr("action") ?: ""
 			Log.d(TAG, "3ds/return fetched ($code), PaRes=${if (paRes.isNullOrEmpty()) "<none>" else "<len ${paRes.length}>"}")
-			if (!paRes.isNullOrEmpty()) {
+			if (!paRes.isNullOrEmpty() && !action.contains(POST_BACK_PATH)) {
 				activity?.runOnUiThread { complete(md, paRes) }
 			}
 			WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
@@ -265,10 +269,13 @@ class ThreeDsDialogFragment : DialogFragment() {
 	private fun extractPaResFromForm(view: WebView, completeIfEmpty: Boolean = false) {
 		if (returnHandled) return
 		val script = "(function(){var g=function(n){var e=document.querySelector('[name=\"'+n+'\"]');return e?e.value:null;};" +
-				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')||g('CRes')||g('cres')});})()"
+				"var e=document.querySelector('[name=\"PaRes\"],[name=\"pares\"],[name=\"CRes\"],[name=\"cres\"]');" +
+				"var act=e&&e.form?(e.form.getAttribute('action')||''):'';" +
+				"return JSON.stringify({MD:g('MD')||g('md'),PaRes:g('PaRes')||g('pares')||g('CRes')||g('cres'),Action:act});})()"
 		view.evaluateJavascript(script) { result ->
 			var resultMd = md
 			var paRes = ""
+			var action = ""
 			try {
 				if (result != null && result != "null" && result != "\"null\"") {
 					Log.d(TAG, "form fields: $result")
@@ -278,10 +285,13 @@ class ThreeDsDialogFragment : DialogFragment() {
 					val obj = JsonParser().parse(clean).asJsonObject
 					if (obj.has("PaRes") && !obj.get("PaRes").isJsonNull) paRes = obj.get("PaRes").asString
 					if (obj.has("MD") && !obj.get("MD").isJsonNull) resultMd = obj.get("MD").asString
+					if (obj.has("Action") && !obj.get("Action").isJsonNull) action = obj.get("Action").asString
 				}
 			} catch (e: Exception) {
 				e.printStackTrace()
 			}
+			// Форму, ведущую на get3dsData, не перехватываем — она должна уйти на сервер
+			if (action.contains(POST_BACK_PATH)) return@evaluateJavascript
 			if (paRes.isNotEmpty()) {
 				complete(resultMd, paRes)
 			} else if (completeIfEmpty) {
