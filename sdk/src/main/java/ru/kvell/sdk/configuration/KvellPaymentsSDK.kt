@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.yandex.pay.core.YandexPayEnvironment
+import ru.kvell.sdk.BuildConfig
 import com.yandex.pay.core.YandexPayLib
 import com.yandex.pay.core.YandexPayLibConfig
 import com.yandex.pay.core.YandexPayLocale
@@ -83,7 +84,7 @@ interface KvellPaymentsSDK {
 		private fun createClient(publicId: String?, apiSecret: String = ""): OkHttpClient {
 			val okHttpClientBuilder = OkHttpClient.Builder()
 					.addInterceptor(HttpLoggingInterceptor { message -> android.util.Log.i("KvellHttp", message) }
-											.setLevel(HttpLoggingInterceptor.Level.BODY))
+											.setLevel(if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE))
 			val client = okHttpClientBuilder
 					.connectTimeout(20, TimeUnit.SECONDS)
 					.readTimeout(20, TimeUnit.SECONDS)

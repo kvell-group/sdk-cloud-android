@@ -9,6 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import ru.kvell.sdk.BuildConfig
 import ru.kvell.sdk.Constants
 import ru.kvell.sdk.api.AuthenticationInterceptor
 import ru.kvell.sdk.api.KvellPaymentsApiService
@@ -33,7 +34,7 @@ class KvellPaymentsNetModule(private val publicId: String, private val apiSecret
 	@Singleton
 	fun providesHttpLoggingInterceptor(): HttpLoggingInterceptor =
 		HttpLoggingInterceptor { message -> Log.i("KvellHttp", message) }
-			.setLevel(HttpLoggingInterceptor.Level.BODY)
+			.setLevel(if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE)
 
 	@Provides
 	@Singleton

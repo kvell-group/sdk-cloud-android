@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.net.http.SslError
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,6 +13,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.SslErrorHandler
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -189,6 +192,24 @@ class ThreeDsDialogFragment : DialogFragment() {
 			// Страница /3ds/return содержит форму c полями PaRes/MD и автосабмитится на PaymentUrl.
 			// Считываем значения полей и завершаем 3DS через post3ds.
 			extractPaResFromForm(view)
+		}
+
+		// Молчаливый провал TLS = белый экран: страница/сабресурс ACS может идти по сертификату
+		// Минцифры. Логируем причину и цепочку, чтобы видеть, чего не хватает в trust anchors.
+		override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+			val cert = error.certificate
+			ThreeDsLog.d("onReceivedSslError: primaryError=${error.primaryError} url=${error.url} issuedBy=${cert?.issuedBy?.dName} issuedTo=${cert?.issuedTo?.dName}")
+			handler.cancel()
+		}
+
+		override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+			ThreeDsLog.d("onReceivedError: mainFrame=${request.isForMainFrame} code=${error.errorCode} desc=${error.description} url=${request.url}")
+			super.onReceivedError(view, request, error)
+		}
+
+		override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
+			ThreeDsLog.d("onReceivedHttpError: mainFrame=${request.isForMainFrame} status=${errorResponse.statusCode} url=${request.url}")
+			super.onReceivedHttpError(view, request, errorResponse)
 		}
 	}
 
