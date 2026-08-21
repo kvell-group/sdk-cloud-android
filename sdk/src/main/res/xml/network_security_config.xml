@@ -5,6 +5,11 @@
             <certificates src="system" />
             <certificates src="@raw/russian_trusted_root_ca" />
             <certificates src="@raw/russian_trusted_sub_ca" />
+            <certificates src="@raw/globalsign_root_r6" />
+            <!-- Промежуточный GlobalSign GCC R6 AlphaSSL CA 2025 (ACS securepaymentacs.com).
+                 Нужен, если сервер ACS не отдаёт промежуточный в цепочке. Положи PEM в
+                 res/raw/globalsign_gcc_r6_alphassl_ca_2025.pem и раскомментируй строку ниже. -->
+            <!-- <certificates src="@raw/globalsign_gcc_r6_alphassl_ca_2025" /> -->
         </trust-anchors>
     </base-config>
 </network-security-config>
