@@ -5,6 +5,7 @@
         tools:targetApi="n">
         <activity
             android:name=".ui.PaymentActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/kvell_AcquiringTheme"
             android:windowSoftInputMode="adjustResize"/>
     </application>

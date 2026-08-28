@@ -2,7 +2,9 @@ package ru.kvell.demo.screens.main
 
 import android.os.Bundle
 import android.widget.Toast
+import ru.kvell.demo.Constants
 import ru.kvell.demo.R
+import ru.kvell.demo.api.SbpTestHandler
 import ru.kvell.demo.base.BaseActivity
 import ru.kvell.demo.databinding.ActivityMainBinding
 import ru.kvell.demo.support.CardIOScanner
@@ -74,6 +76,16 @@ class MainActivity : BaseActivity() {
 
 		val jsonData = binding.editJsonData.text.toString()
 		val isDualMessagePayment = binding.checkboxDualMessagePayment.isChecked
+		val isSbpEnabled = binding.checkboxSbp.isChecked
+
+		if (isSbpEnabled) {
+			val (sbpPublicId, sbpApiSecret) = if (publicId.isNotEmpty()) {
+				publicId to apiSecret
+			} else {
+				Constants.merchantPublicId to Constants.apiSecret
+			}
+			KvellPaymentsSDK.sbpPaymentHandler = SbpTestHandler(sbpPublicId, sbpApiSecret)
+		}
 
 		var payer = PaymentDataPayer()
 		payer.firstName = payerFirstName
@@ -108,7 +120,8 @@ class MainActivity : BaseActivity() {
 			disableGPay = false,
 			disableYandexPay = false,
 			yandexPayMerchantID = "",
-			apiUrl = apiUrl
+			apiUrl = apiUrl,
+			enableSbp = isSbpEnabled
 		)
 		kvellSdkLauncher.launch(configuration)
 	}

@@ -66,6 +66,16 @@
             android:text="@string/kvell_text_options_card"
             android:visibility="gone"/>
 
+        <Button
+            android:id="@+id/button_sbp"
+            style="@style/kvell_ButtonBlue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/kvell_bg_rounded_black_button"
+            android:text="@string/kvell_text_options_sbp"
+            android:visibility="gone" />
+
         <com.yandex.pay.core.ui.YandexPayButton
             android:id="@+id/button_yandexpay"
             android:layout_width="match_parent"

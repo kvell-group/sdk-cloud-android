@@ -11,6 +11,8 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowAnimationStyle">@android:style/Animation</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:statusBarColor">@color/kvell_white</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="bottomSheetDialogTheme">@style/kvell_BottomSheetDialogTheme</item>
     </style>
 
@@ -32,6 +34,8 @@
         <item name="android:windowBackground">@color/kvell_white</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@color/kvell_white</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="kvell_TextTitle" parent="Widget.MaterialComponents.TextView">

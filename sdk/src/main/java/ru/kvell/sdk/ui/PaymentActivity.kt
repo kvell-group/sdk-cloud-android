@@ -29,6 +29,7 @@ import ru.kvell.sdk.ui.dialogs.base.BasePaymentBottomSheetFragment
 import ru.kvell.sdk.ui.dialogs.PaymentCardFragment
 import ru.kvell.sdk.ui.dialogs.PaymentOptionsFragment
 import ru.kvell.sdk.ui.dialogs.PaymentProcessFragment
+import ru.kvell.sdk.ui.dialogs.SbpPaymentFragment
 import ru.kvell.sdk.util.GooglePayHandler
 import ru.kvell.sdk.util.nextFragment
 
@@ -42,6 +43,7 @@ internal class PaymentActivity: FragmentActivity(), BasePaymentBottomSheetFragme
 		private const val REQUEST_CODE_GOOGLE_PAY = 1
 
 		private const val EXTRA_CONFIGURATION = "EXTRA_CONFIGURATION"
+		private const val TAG_SBP = "SBP_PAYMENT"
 
 		fun getStartIntent(context: Context, configuration: PaymentConfiguration): Intent {
 			val intent = Intent(context, PaymentActivity::class.java)
@@ -145,6 +147,11 @@ internal class PaymentActivity: FragmentActivity(), BasePaymentBottomSheetFragme
 
 		binding.iconProgress.isVisible = false
 
+		if (paymentConfiguration!!.singlePaymentModeSbp) {
+			showSbpPayment()
+			return
+		}
+
 		val fragment = PaymentOptionsFragment.newInstance()
 
 		fragment.show(supportFragmentManager, "")
@@ -175,6 +182,15 @@ internal class PaymentActivity: FragmentActivity(), BasePaymentBottomSheetFragme
 	override fun onTinkoffPayClicked() {
 		val fragment = PaymentProcessFragment.newInstance(PaymentProcessFragment.MODE_TINKOFF_PAY)
 		fragment.show(supportFragmentManager, "")
+	}
+
+	override fun onSbpClicked() {
+		showSbpPayment()
+	}
+
+	private fun showSbpPayment() {
+		if (supportFragmentManager.findFragmentByTag(TAG_SBP) != null) return
+		SbpPaymentFragment.newInstance().show(supportFragmentManager, TAG_SBP)
 	}
 
 	override fun onPayClicked(cryptogram: String) {

@@ -23,6 +23,7 @@ import ru.kvell.sdk.api.AuthenticationInterceptor
 import ru.kvell.sdk.api.KvellPaymentsApiService
 import ru.kvell.sdk.api.KvellPaymentsApi
 import ru.kvell.sdk.models.Transaction
+import ru.kvell.sdk.sbp.SbpPaymentHandler
 import ru.kvell.sdk.ui.PaymentActivity
 import java.util.concurrent.TimeUnit
 
@@ -45,6 +46,9 @@ interface KvellPaymentsSDK {
 	}
 
 	companion object {
+
+
+		var sbpPaymentHandler: SbpPaymentHandler? = null
 
 		fun initialize(context: Context, yandexPayAppId: String, yandexPaySandboxMode: Boolean) {
 			if (YandexPayLib.isSupported) {

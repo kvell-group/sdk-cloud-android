@@ -14,4 +14,8 @@ data class PaymentConfiguration(val publicId: String,
 								val disableGPay: Boolean = false,
 								val disableYandexPay: Boolean = false,
 								val yandexPayMerchantID: String = "",
-								val apiUrl: String = ""): Parcelable
+								val apiUrl: String = "",
+								val enableSbp: Boolean = false,
+								val singlePaymentModeSbp: Boolean = false,
+								val sbpPollingIntervalMs: Long = 2000,
+								val sbpTimeoutMs: Long = 300000): Parcelable

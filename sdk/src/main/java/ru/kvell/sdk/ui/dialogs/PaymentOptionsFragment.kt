@@ -23,6 +23,7 @@ import com.yandex.pay.core.data.OrderID
 import com.yandex.pay.core.data.PaymentMethod
 import com.yandex.pay.core.data.PaymentMethodType
 import ru.kvell.sdk.R
+import ru.kvell.sdk.configuration.KvellPaymentsSDK
 import ru.kvell.sdk.databinding.DialogKvellPaymentOptionsBinding
 import ru.kvell.sdk.ui.PaymentActivity
 import ru.kvell.sdk.ui.dialogs.base.BasePaymentBottomSheetFragment
@@ -39,6 +40,7 @@ internal class PaymentOptionsFragment :
 		fun onGooglePayClicked()
 		fun onCardClicked()
 		fun onTinkoffPayClicked()
+		fun onSbpClicked()
 	}
 
 	companion object {
@@ -82,6 +84,9 @@ internal class PaymentOptionsFragment :
 		}
 
 		binding.buttonTinkoffPay.visibility = if (state.isTinkoffPayAvailable == true) View.VISIBLE else View.GONE
+
+		val sbpAvailable = paymentConfiguration?.enableSbp == true && KvellPaymentsSDK.sbpPaymentHandler != null
+		binding.buttonSbp.visibility = if (sbpAvailable) View.VISIBLE else View.GONE
 
 		checkSaveCardState(state)
 	}
@@ -194,6 +199,14 @@ internal class PaymentOptionsFragment :
 
 			val listener = requireActivity() as? IPaymentOptionsFragment
 			listener?.onTinkoffPayClicked()
+			dismiss()
+		}
+
+		binding.buttonSbp.setOnClickListener {
+			updateEmail()
+
+			val listener = requireActivity() as? IPaymentOptionsFragment
+			listener?.onSbpClicked()
 			dismiss()
 		}
 

@@ -243,6 +243,12 @@
                 android:layout_height="wrap_content"
                 android:text="Dual message payment"/>
 
+            <CheckBox
+                android:id="@+id/checkbox_sbp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="СБП (тест)"/>
+
             <Button
                 android:id="@+id/button_run"
                 android:layout_width="match_parent"

@@ -42,6 +42,11 @@
     <string name="kvell_text_process_description_tinkoff_pay">Если перейти и оплатить в приложении не удалось, попробуйте снова или выберите другой способ оплаты</string>
     <string name="kvell_text_process_button_tinkoff_pay">Выбрать способ оплаты</string>
 
+    <string name="kvell_text_options_sbp">Оплатить через СБП</string>
+    <string name="kvell_text_process_title_sbp">Ждем оплату\nчерез СБП</string>
+    <string name="kvell_text_process_description_sbp">Если перейти и оплатить в приложении банка не удалось, попробуйте снова или выберите другой способ оплаты</string>
+    <string name="kvell_text_process_button_sbp">Выбрать способ оплаты</string>
+
 
     <string name="kvell_currency_template">%.2f\u20BD</string>
 
