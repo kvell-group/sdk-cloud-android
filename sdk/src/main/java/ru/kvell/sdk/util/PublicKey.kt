@@ -13,6 +13,24 @@ class PublicKey private constructor() {
 		private const val PEM = "pem"
 		private const val VERSION = "version"
 
+		@Volatile
+		private var fetched: Pair<String, Int>? = null
+
+		// Ключ, полученный с сервера в этом процессе, иначе сохранённый формой SDK; null — ещё не получали
+		fun cached(): Pair<String, Int>? {
+			fetched?.let { return it }
+			if (!::sharedPreferences.isInitialized) return null
+			val pem = sharedPreferences.getString(PEM, null)
+			val version = sharedPreferences.getInt(VERSION, 0)
+			return if (!pem.isNullOrBlank() && version > 0) pem to version else null
+		}
+
+		fun remember(pem: String?, version: Int?) {
+			if (!pem.isNullOrBlank() && version != null && version > 0) {
+				fetched = pem to version
+			}
+		}
+
 		fun getInstance(context: Context): PublicKey {
 			if (!::sharedPreferences.isInitialized) {
 				synchronized(PublicKey::class.java) {

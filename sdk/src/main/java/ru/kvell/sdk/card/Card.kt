@@ -6,8 +6,11 @@ import android.util.Base64
 import com.google.gson.GsonBuilder
 import ru.kvell.sdk.api.models.CardCryptogramPacket
 import ru.kvell.sdk.api.models.CardInfo
+import ru.kvell.sdk.configuration.KvellPaymentsSDK
 import ru.kvell.sdk.util.HexPacketHelper
+import ru.kvell.sdk.util.PublicKey as StoredPublicKey
 import java.io.UnsupportedEncodingException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.Locale
 import java.util.TimeZone
 import java.security.InvalidKeyException
@@ -25,12 +28,17 @@ import javax.crypto.NoSuchPaddingException
 class Card {
 	companion object {
 
-		@Deprecated("Use API: https://api.cloudpayments.ru/payments/publickey")
+		// Запасной ключ Kvell для cardCryptogram; эту версию нельзя удалять из wallet, пока в ходу сборки с этим SDK
+		private const val FALLBACK_KEY_VERSION = 1
+		private const val FALLBACK_PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0lWVYLO2qBYsIgzEG//nBk+nNh8SM79D7cCSQyrT5ce/c1mAoKK3THvCTfQwt0edk2eNB6NnTnBlKF2D+7Y1mr/KgNwYVtTz+e9kRmIw8wYCB+AYOFl87YVWneKqFWylhkjZLJhbvBx4aCryfLFARNn5zhZD7QCo7X+xg79wEvWRng0/eIpD8sbvbNB/8n8DVIlJSY0ICdtJu7SAlF5bRsXJOa9wX+/AUHWgq0UOs3yMZL80gDCVaEQlsWUYyqOK/shSgE8WdV8ZpWFbyLMUblghIN/pDLtY5cJr+G24wFZpxs042TcQ0CzCg9cB9SP+9dzcPFPWmKKxyV6LvotYfwIDAQAB"
+
+		private val keyRequested = AtomicBoolean(false)
+
+		// Ключ CloudPayments: им шифруется только cardCryptogramForCVV, Kvell такие криптограммы не расшифрует
 		private fun getKeyVersion(): String {
 			return "04"
 		}
 
-		@Deprecated("Use API: https://api.cloudpayments.ru/payments/publickey")
 		private fun getPublicKey(): String {
 			return "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArBZ1NNjvszen6BNWsgyDUJvDUZDtvR4jKNQtEwW1iW7hqJr0TdD8hgTxw3DfH+Hi/7ZjSNdH5EfChvgVW9wtTxrvUXCOyJndReq7qNMo94lHpoSIVW82dp4rcDB4kU+q+ekh5rj9Oj6EReCTuXr3foLLBVpH0/z1vtgcCfQzsLlGkSTwgLqASTUsuzfI8viVUbxE1a+600hN0uBh/CYKoMnCp/EhxV8g7eUmNsWjZyiUrV8AA/5DgZUCB+jqGQT/Dhc8e21tAkQ3qan/jQ5i/QYocA/4jW3WQAldMLj0PA36kINEbuDKq8qRh25v+k4qyjb7Xp4W2DywmNtG3Q20MQIDAQAB"
 		}
@@ -130,7 +138,7 @@ class Card {
 
 			val clearNumber = prepareCardNumber(cardNumber)
 
-			val cryptogram = createCardCryptogram(clearNumber, cardExp, cardCvv, publicId, clearPublicKey)
+			val cryptogram = createCardCryptogram(clearNumber, cardExp, cardCvv, publicId, clearPublicKey) ?: return null
 
 			val cardInfo = CardInfo(
 				firstSixDigits = clearNumber.substring(0, 6),
@@ -201,38 +209,27 @@ class Card {
 			return crypto64
 		}
 
-		@Deprecated("Use API: https://api.cloudpayments.ru/payments/publickey to get publicKey and keyVersion, then use new method createHexPacketFromData(number, cardExp, cardCvv, publicId, publicKey, keyVersion)")
+		// Старый формат "01…" Kvell не принимает — собираем пакет createHexPacketFromData: ключ с сервера, из формы SDK или запасной
+		@Deprecated("Use createHexPacketFromData(number, cardExp, cardCvv, publicId, publicKey, keyVersion) with key from KvellPaymentsApi.getPublicKey()")
 		@Throws(UnsupportedEncodingException::class, NoSuchPaddingException::class, NoSuchAlgorithmException::class, BadPaddingException::class,
 				IllegalBlockSizeException::class, InvalidKeyException::class)
 		fun cardCryptogram(number: String, cardExp: String, cardCvv: String, publicId: String): String? {
-			val cardNumber = prepareCardNumber(number)
-			var exp = cardExp.replace("/", "")
-			if (cardNumber.length < 14 || exp.length != 4) {
-				return null
-			}
-			val shortNumber =
-				cardNumber.substring(0, 6) + cardNumber.substring(cardNumber.length - 4, cardNumber.length)
-
-			exp = exp.substring(2, 4) + cardExp.substring(0, 2)
-			val s = "$cardNumber@$exp@$cardCvv@$publicId"
-			val bytes = s.toByteArray(charset("ASCII"))
-			val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
-			val random = SecureRandom()
-			cipher.init(Cipher.ENCRYPT_MODE, getRSAKey(getPublicKey()), random)
-			val crypto = cipher.doFinal(bytes)
-			var crypto64 = "01" +
-					shortNumber +
-					exp +
-					getKeyVersion() +
-					Base64.encodeToString(crypto, Base64.DEFAULT)
-			val cr_array = crypto64.split("\n").toTypedArray()
-			crypto64 = ""
-			for (i in cr_array.indices) {
-				crypto64 += cr_array[i]
-			}
-			return crypto64
+			requestPublicKey(publicId)
+			val (publicKey, keyVersion) = StoredPublicKey.cached() ?: (FALLBACK_PUBLIC_KEY to FALLBACK_KEY_VERSION)
+			return createHexPacketFromData(number, cardExp, cardCvv, publicId, publicKey, keyVersion)
 		}
 
+		// Один фоновый запрос ключа на процесс; при ошибке повторим при следующем вызове
+		private fun requestPublicKey(publicId: String) {
+			if (!keyRequested.compareAndSet(false, true)) return
+			KvellPaymentsSDK.createApi(publicId).getPublicKey()
+				.subscribe(
+					{ response -> StoredPublicKey.remember(response.pem, response.version) },
+					{ keyRequested.set(false) }
+				)
+		}
+
+		@Deprecated("Kvell не принимает CVV-криптограмму в формате \"03\"")
 		@Throws(UnsupportedEncodingException::class, NoSuchPaddingException::class, NoSuchAlgorithmException::class, BadPaddingException::class, IllegalBlockSizeException::class, InvalidKeyException::class)
 		fun cardCryptogramForCVV(cardCvv: String): String? {
 			val bytes = cardCvv.toByteArray(charset("ASCII"))

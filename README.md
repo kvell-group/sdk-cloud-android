@@ -158,8 +158,9 @@ override fun onAuthorizationFailed(error: String?) {
 Card.isValidNumber(cardNumber)                 // проверка номера карты
 Card.isValidExpDate(expDate)                   // срок действия, формат MM/yy
 Card.getType(cardNumber)                        // тип платёжной системы
-Card.cardCryptogramForCVV(cvv)                  // криптограмма CVV для оплаты сохранённой картой
 ```
+
+`Card.cardCryptogram(...)` устарел: он собирает тот же пакет, что `createHexPacketFromData`, но ключ берёт из кэша или запасной, зашитый в SDK. В новом коде используйте `createHexPacketFromData` с ключом из `getPublicKey()`. `Card.cardCryptogramForCVV(cvv)` Kvell не поддерживает.
 
 ### Сканер карт
 Подключается любой сканер, вызываемый через Activity. Реализуйте `CardScanner` и передайте объект в `PaymentConfiguration`. Если не реализован — кнопка сканирования не показывается. Пример со сканером CardIO — в модуле `app`.

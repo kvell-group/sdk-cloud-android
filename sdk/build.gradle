@@ -22,14 +22,13 @@ android {
     }
 
     buildTypes {
+        // Библиотеку минифицирует R8 приложения по consumerProguardFiles; свой R8 библиотеки не справляется с sealed-классами
         debug {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
             consumerProguardFiles 'proguard-rules.pro'
         }
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
             consumerProguardFiles 'proguard-rules.pro'
         }
     }
